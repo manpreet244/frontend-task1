@@ -30,7 +30,6 @@ export function useProducts(category?: string) {
         if (!cancelled) {
           const message = err instanceof Error ? err.message : 'Failed to load products';
           setError(message);
-          console.error(err);
         }
       } finally {
         if (!cancelled) setLoading(false);
