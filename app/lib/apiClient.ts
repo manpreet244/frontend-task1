@@ -37,26 +37,81 @@ async function request<T>(endpoint: string, options: FetchOptions = {}): Promise
 
   try {
     const res = await fetch(url, fetchOpts);
-    
+
     if (!res.ok) {
       // user friendly messages based on status
       const messages: Record<number, string> = {
-        400: 'Invalid request. Please try again.',
-        401: 'Please login to continue.',
-        403: 'You don\'t have permission to access this.',
-        404: 'The requested item was not found.',
-        500: 'Server error. Please try again later.',
-        503: 'Service temporarily unavailable.',
+        400: "Invalid request. Please try again.",
+        401: "Please login to continue.",
+        403: "You don't have permission to access this.",
+        404: "The requested item was not found.",
+        500: "Server error. Please try again later.",
+        503: "Service temporarily unavailable.",
       };
-      
-      const message = messages[res.status] || 'Something went wrong. Please try again.';
+
+      const message =
+        messages[res.status] || "Something went wrong. Please try again.";
       throw new ApiError(message, `HTTP_${res.status}`, res.status);
     }
 
     return res.json();
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    throw new ApiError('Unable to connect. Check your internet connection.', 'NETWORK_ERROR', 0);
+
+    // user-friendly error messages
+    const errorMessage = err instanceof Error ? err.message.toLowerCase() : "";
+
+    if (
+      errorMessage.includes("getaddrinfo") ||
+      errorMessage.includes("enotfound") ||
+      errorMessage.includes("dns")
+    ) {
+      throw new ApiError(
+        "Unable to load products. Please try again later.",
+        "DNS_ERROR",
+        0,
+      );
+    }
+
+    if (
+      errorMessage.includes("econnrefused") ||
+      errorMessage.includes("connection refused")
+    ) {
+      throw new ApiError(
+        "Service is temporarily unavailable. Please try again later.",
+        "CONNECTION_REFUSED",
+        0,
+      );
+    }
+
+    if (
+      errorMessage.includes("timeout") ||
+      errorMessage.includes("etimedout")
+    ) {
+      throw new ApiError(
+        "Taking too long to load. Please try again.",
+        "TIMEOUT",
+        0,
+      );
+    }
+
+    if (
+      errorMessage.includes("fetch failed") ||
+      errorMessage.includes("failed to fetch")
+    ) {
+      throw new ApiError(
+        "Unable to load content. Please try again later.",
+        "FETCH_FAILED",
+        0,
+      );
+    }
+
+    // Default error
+    throw new ApiError(
+      "Something went wrong. Please try again later.",
+      "UNKNOWN_ERROR",
+      0,
+    );
   }
 }
 
