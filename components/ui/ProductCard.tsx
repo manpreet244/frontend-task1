@@ -11,7 +11,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const { image, title, price, category } = product;
 
   return (
-    <Card className="flex flex-col py-2 overflow-hidden bg-white border hover:shadow-md transition-shadow h-full">
+    <Card className="flex flex-col py-2 overflow-hidden bg-white border hover:shadow-lg hover:translate-y-[-2px] transition-shadow h-full">
       {/* Image */}
       <div className="h-44 w-full bg-white p-4 flex items-center justify-center">
         <img
@@ -21,7 +21,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         />
       </div>
       {/* Card Content */}
-      <div className="flex flex-col px-4 pb-4 pt-0 flex-grow">
+      <div className="flex flex-col px-6 pb-4 pt-0 flex-grow">
         <h3 className="font-medium text-sm text-slate-800 line-clamp-2 min-h-[40px] leading-tight">
           {title}
         </h3>
