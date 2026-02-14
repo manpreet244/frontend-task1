@@ -1,7 +1,31 @@
-import api from './api';
-import { Product } from '@/app/types/product';
+import { apiClient } from "@/app/lib/apiClient";
+import { Product } from "@/app/types/product";
 
-export const getProducts = async (): Promise<Product[]> => {
-  const response = await api.get<Product[]>('/products');
-  return response.data;
-};
+// cache for 1 min by default
+const CACHE_TIME = 60;
+
+// get all products
+export async function getProducts() {
+  return apiClient.get<Product[]>("/products", { revalidate: CACHE_TIME });
+}
+
+// get single product by id
+export async function getProduct(id: number) {
+  return apiClient.get<Product>(`/products/${id}`, { revalidate: CACHE_TIME });
+}
+
+// get products by category
+export async function getProductsByCategory(category: string) {
+  return apiClient.get<Product[]>(`/products/category/${category}`, {
+    revalidate: CACHE_TIME,
+  });
+}
+
+
+export async function getProductsLimited(limit: number) {
+  return apiClient.get<Product[]>(`/products?limit=${limit}`, {
+    revalidate: CACHE_TIME,
+  });
+}
+
+
