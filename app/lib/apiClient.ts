@@ -1,131 +1,88 @@
+import axios, { AxiosError, isAxiosError } from 'axios';
 import { ApiError } from './errors';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://fakestoreapi.com';
 
-type FetchOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  body?: unknown;
-  cache?: RequestCache;
-  revalidate?: number;
-  tags?: string[];
+// axios instance with defaults
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// map HTTP status codes to user-friendly messages
+const statusMessages: Record<number, string> = {
+  400: "Invalid request. Please try again.",
+  401: "Please login to continue.",
+  403: "You don't have permission to access this.",
+  404: "The requested item was not found.",
+  500: "Server error. Please try again later.",
+  503: "Service temporarily unavailable.",
 };
 
-async function request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { method = 'GET', body, cache, revalidate, tags } = options;
-  
-  const url = `${BASE_URL}${endpoint}`;
-  
-  const fetchOpts: RequestInit & { next?: { revalidate?: number; tags?: string[] } } = {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-  };
+// figure out a readable error message from axios errors
+function parseError(err: unknown): ApiError {
+  if (err instanceof ApiError) return err;
 
-  if (body) {
-    fetchOpts.body = JSON.stringify(body);
-  }
+  if (isAxiosError(err)) {
+    const status = err.response?.status || 0;
 
-  if (cache) {
-    fetchOpts.cache = cache;
-  }
-
-  // nextjs caching stuff
-  if (revalidate !== undefined || tags) {
-    fetchOpts.next = {};
-    if (revalidate !== undefined) fetchOpts.next.revalidate = revalidate;
-    if (tags) fetchOpts.next.tags = tags;
-  }
-
-  try {
-    const res = await fetch(url, fetchOpts);
-
-    if (!res.ok) {
-      // user friendly messages based on status
-      const messages: Record<number, string> = {
-        400: "Invalid request. Please try again.",
-        401: "Please login to continue.",
-        403: "You don't have permission to access this.",
-        404: "The requested item was not found.",
-        500: "Server error. Please try again later.",
-        503: "Service temporarily unavailable.",
-      };
-
-      const message =
-        messages[res.status] || "Something went wrong. Please try again.";
-      throw new ApiError(message, `HTTP_${res.status}`, res.status);
+    // known HTTP status
+    if (status && statusMessages[status]) {
+      return new ApiError(statusMessages[status], `HTTP_${status}`, status);
     }
 
-    return res.json();
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
-
-    // user-friendly error messages
-    const errorMessage = err instanceof Error ? err.message.toLowerCase() : "";
-
-    if (
-      errorMessage.includes("getaddrinfo") ||
-      errorMessage.includes("enotfound") ||
-      errorMessage.includes("dns")
-    ) {
-      throw new ApiError(
-        "Unable to load products. Please try again later.",
-        "DNS_ERROR",
-        0,
-      );
+    // network-level issues
+    if (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT') {
+      return new ApiError("Taking too long to load. Please try again.", "TIMEOUT", 0);
     }
 
-    if (
-      errorMessage.includes("econnrefused") ||
-      errorMessage.includes("connection refused")
-    ) {
-      throw new ApiError(
-        "Service is temporarily unavailable. Please try again later.",
-        "CONNECTION_REFUSED",
-        0,
-      );
+    if (err.code === 'ERR_NETWORK') {
+      return new ApiError("Unable to load content. Please check your connection.", "NETWORK_ERROR", 0);
     }
 
-    if (
-      errorMessage.includes("timeout") ||
-      errorMessage.includes("etimedout")
-    ) {
-      throw new ApiError(
-        "Taking too long to load. Please try again.",
-        "TIMEOUT",
-        0,
-      );
+    if (err.response) {
+      return new ApiError("Something went wrong. Please try again.", `HTTP_${status}`, status);
     }
 
-    if (
-      errorMessage.includes("fetch failed") ||
-      errorMessage.includes("failed to fetch")
-    ) {
-      throw new ApiError(
-        "Unable to load content. Please try again later.",
-        "FETCH_FAILED",
-        0,
-      );
-    }
-
-    // Default error
-    throw new ApiError(
-      "Something went wrong. Please try again later.",
-      "UNKNOWN_ERROR",
+    // no response at all (server down, DNS fail etc)
+    return new ApiError(
+      "Service is temporarily unavailable. Please try again later.",
+      "CONNECTION_ERROR",
       0,
     );
   }
+
+  return new ApiError("Something went wrong. Please try again later.", "UNKNOWN_ERROR", 0);
 }
 
-// helper functions
+// generic request function
+async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, body?: unknown): Promise<T> {
+  try {
+    const res = await axiosInstance.request<T>({
+      method,
+      url,
+      data: body,
+    });
+    return res.data;
+  } catch (err) {
+    throw parseError(err);
+  }
+}
+
+// helper methods
 export const apiClient = {
-  get: <T>(endpoint: string, opts?: Omit<FetchOptions, 'method' | 'body'>) => 
-    request<T>(endpoint, { ...opts, method: 'GET' }),
-    
-  post: <T>(endpoint: string, body?: unknown, opts?: Omit<FetchOptions, 'method'>) =>
-    request<T>(endpoint, { ...opts, method: 'POST', body }),
-    
-  put: <T>(endpoint: string, body?: unknown, opts?: Omit<FetchOptions, 'method'>) =>
-    request<T>(endpoint, { ...opts, method: 'PUT', body }),
-    
-  delete: <T>(endpoint: string, opts?: Omit<FetchOptions, 'method' | 'body'>) =>
-    request<T>(endpoint, { ...opts, method: 'DELETE' }),
+  get: <T>(endpoint: string) =>
+    request<T>('GET', endpoint),
+
+  post: <T>(endpoint: string, body?: unknown) =>
+    request<T>('POST', endpoint, body),
+
+  put: <T>(endpoint: string, body?: unknown) =>
+    request<T>('PUT', endpoint, body),
+
+  delete: <T>(endpoint: string) =>
+    request<T>('DELETE', endpoint),
 };
