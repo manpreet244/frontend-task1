@@ -9,10 +9,6 @@ export async function getProducts() {
   return apiClient.get<Product[]>("/products", { revalidate: CACHE_TIME });
 }
 
-// get single product by id
-export async function getProduct(id: number) {
-  return apiClient.get<Product>(`/products/${id}`, { revalidate: CACHE_TIME });
-}
 
 // get products by category
 export async function getProductsByCategory(category: string) {
@@ -22,10 +18,5 @@ export async function getProductsByCategory(category: string) {
 }
 
 
-export async function getProductsLimited(limit: number) {
-  return apiClient.get<Product[]>(`/products?limit=${limit}`, {
-    revalidate: CACHE_TIME,
-  });
-}
 
 
