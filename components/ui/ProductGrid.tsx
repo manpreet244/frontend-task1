@@ -51,4 +51,4 @@ const ProductGrid = ({ category }: ProductGridProps = {}) => {
   );
 };
 
-export default ProductGrid
+export default ProductGrid;

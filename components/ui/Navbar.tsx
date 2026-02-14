@@ -23,7 +23,7 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60" aria-label="Main navigation">
       <div className="container mx-auto px-6 sm:px-10 lg:px-16">
         <div className="flex h-14 items-center justify-between">
           {/* Logo */}
@@ -52,7 +52,7 @@ const Navbar = () => {
                 ☰
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] sm:w-[350px]">
+            <SheetContent side="right" className="w-70 sm:w-87.5">
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               <div className="flex flex-col gap-4 mt-6">
                 {navLinks.map((link) => (
