@@ -1,12 +1,7 @@
 "use client";
 import React from "react";
 import { Product } from "@/app/types/product";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 interface ProductCardProps {
   product: Product;
@@ -14,23 +9,28 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const { image, title, price, category } = product;
+  
   return (
-    <Card className="flex flex-col max-w-[240px]overflow-hidden py-0 pb-4 bg-gray-50 h-full border-none hover:shadow-md transition-shadow ">
-      <div className="relative aspect-[4/3] w-full rounded-t-lg overflow-hidden mb-2">
+    <Card className="flex flex-col py-2 overflow-hidden bg-white border hover:shadow-md transition-shadow h-full">
+      {/* 1. Image Container */}
+      <div className="h-44 w-full bg-white p-4 flex items-center justify-center">
         <img
           src={image}
           alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="max-w-full max-h-full object-contain"
         />
       </div>
-      <div className="flex w-full justify-between p-4 gap-6">
-        <h3 className="font-semibold text-sm text-slate-800 line-clamp-1">
+
+      {/* 2. Text Container: We remove the padding from Card and put it here */}
+      <div className="flex flex-col px-4 pb-4 pt-0 flex-grow">
+        <h3 className="font-medium text-sm text-slate-800 line-clamp-2 min-h-[40px] leading-tight">
           {title}
         </h3>
-
-        <div>
-          <p className="text-base font-bold text-slate-900">${price}</p>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+        
+        {/* mt-2 brings the price closer to the title, reducing the "lengthy" feel */}
+        <div className="mt-2">
+          <p className="text-base font-bold text-slate-900 leading-none">${price}</p>
+          <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wide mt-1">
             {category}
           </p>
         </div>
